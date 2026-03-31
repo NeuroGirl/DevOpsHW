@@ -10,12 +10,19 @@ CLONE_NEWPID = 0x20000000
 CLONE_NEWNS = 0x00020000
 
 
-def limit_resources(container_id):
+def limit_resources(container_id, resources):
     cpath = f"/sys/fs/cgroup/{container_id}"
     os.makedirs(cpath, exist_ok=True)
-    with open(f"{cpath}/memory.max", 'w') as f: f.write("256M")
-    with open(f"{cpath}/cgroup.procs", 'w') as f: f.write(str(os.getpid()))
-
+    mem_cfg = resources.get("memory", {})
+    mem_limit = str(mem_cfg["limit"])
+    with open(f"{cpath}/memory.max", "w") as f: f.write(mem_limit)
+    cpu_cfg = resources.get("cpu", {})
+    cpu_quota  = str(cpu_cfg["quota"])
+    cpu_period = str(cpu_cfg["period"])
+    with open(f"{cpath}/cpu.max", "w") as f: f.write(f"{cpu_quota} {cpu_period}")
+    pids_cfg = resources.get("pids", {})
+    with open(f"{cpath}/pids.max", "w") as f: f.write(str(pids_cfg["max"]))
+    with open(f"{cpath}/cgroup.procs", "w") as f: f.write(str(os.getpid()))
 
 def setup_overlay(container_id):
     base = f"/var/lib/my-tool/{container_id}"
@@ -30,8 +37,8 @@ def setup_overlay(container_id):
 
 def child_process(container_id):
     config = json.load(open('config.json'))
-
-    limit_resources(container_id)
+    resources = config.get("linux", {}).get("resources", {})
+    limit_resources(container_id, resources)
 
     hostname = config.get('hostname', 'container')
     libc.sethostname(hostname.encode(), len(hostname))
