@@ -1,0 +1,18 @@
+{
+  "ociVersion": "1.0.2",
+  "hostname": "you_are_in_a_container!",
+  "process": {
+    "args": ["/bin/sh"],
+    "cwd": "/"
+  },
+    "linux": {
+        "resources": {
+            "memory": {
+                "limit": 1000000
+            },
+            "cpu": {
+                "quota": 30000,
+                "period": 80000
+            }
+        }
+    }
