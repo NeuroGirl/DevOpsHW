@@ -50,11 +50,7 @@ merged - /var/lib/{имя-утилиты}/{id}/merged
 
 2) Написать config.json и script.py
 
-Код можно просмотреть в соответсвующих приложенных файлах. Пояснения к кодам:
-
-config.json
-
-script.py
+Код можно просмотреть в соответсвующих приложенных файлах. 
 
 Не забываем, что эти файлы мы создаем в основной ОС, а не внутри контейнера! 
 
@@ -74,5 +70,7 @@ script.py
 <img width="729" height="463" alt="image" src="https://github.com/user-attachments/assets/f4cb6251-01d2-4642-a434-43d9d70949ab" />
 
 <img width="631" height="72" alt="image" src="https://github.com/user-attachments/assets/30be010c-857b-4dc0-80e9-3d628d64fb90" />
+
+Таким образом мы создали утилиту для запуска команд в контейнерах
 
 ### Выполнила: Сусликова В.Д. 467632
