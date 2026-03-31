@@ -20,8 +20,6 @@ def limit_resources(container_id, resources):
     cpu_quota  = str(cpu_cfg["quota"])
     cpu_period = str(cpu_cfg["period"])
     with open(f"{cpath}/cpu.max", "w") as f: f.write(f"{cpu_quota} {cpu_period}")
-    pids_cfg = resources.get("pids", {})
-    with open(f"{cpath}/pids.max", "w") as f: f.write(str(pids_cfg["max"]))
     with open(f"{cpath}/cgroup.procs", "w") as f: f.write(str(os.getpid()))
 
 def setup_overlay(container_id):
