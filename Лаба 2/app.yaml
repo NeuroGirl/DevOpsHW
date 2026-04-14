@@ -13,7 +13,7 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: please-give-me-100-score-points
+  name: please-give-me-full-score-points
 spec:
   replicas: 1
   selector:
