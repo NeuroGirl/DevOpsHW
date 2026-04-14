@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: i-pray-it-works
+data:
+  index.html: |
+    <html>
+      <body>
+        <h1>I slept for 10 minutes today</h1>
+        
+      </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-bess-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-bess-app
+  template:
+    metadata:
+      labels:
+        app: test-bess-app
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25-alpine
+        volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: html-volume
+        configMap:
+          name: i-pray-it-works
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-bess-service
+spec:
+  selector:
+    app: test-bess-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
