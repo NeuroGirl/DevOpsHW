@@ -39,7 +39,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: help_me
+  name: help-me
 spec:
   selector:
     app: look-at-my-vm-name-lol
