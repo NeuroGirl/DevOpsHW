@@ -30,6 +30,9 @@ jobs:
       - name: Run Docker container
         run: docker-compose up -d
 
+      - name: Wait for app to start 
+        run: sleep 10
+
       - name: Run integration test
         continue-on-error: true
         run: python -c "import requests; assert requests.get('http://localhost:5000').text == 'Hello, CI/CD!'"
