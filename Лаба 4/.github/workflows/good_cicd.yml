@@ -1,1 +1,121 @@
-v
+name: Good CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+
+      - name: Install linters
+        run: pip install pylint
+
+      - name: Run linter
+        run: pylint app.py
+
+  test:
+    runs-on: ubuntu-22.04
+    needs: lint
+    timeout-minutes: 10
+
+    services:
+      docker:
+        image: docker:20.10.16
+        privileged: true
+        options: --entrypoint ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4 
+        with:
+          context: .
+          push: false # Собираем локально, не пушим
+          tags: my_app_image:latest
+
+      - name: Run application in Docker
+        run: docker run -d --name my_app_container -p 5000:5000 my_app_image:latest
+
+      - name: Wait for app to start
+        timeout-minutes: 2
+        run: |
+          for i in {1..20}; do
+            curl --fail http://localhost:5000 || echo "Waiting for app..."
+            sleep 5
+          done
+
+      - name: Run integration test
+        run: python -c "import requests; assert requests.get('http://localhost:5000').text == 'Hello, CI/CD!'"
+
+      - name: Stop and remove application container
+        if: always()
+        run: docker stop my_app_container && docker rm my_app_container
+
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Vault CLI and jq
+        run: |
+          wget -qO- https://releases.hashicorp.com/vault/latest/vault_latest_linux_amd64.zip | unzip - > /dev/null
+          sudo mv vault /usr/local/bin/
+          sudo apt-get update && sudo apt-get install -y jq unzip
+
+      - name: Fetch deployment secrets from Vault
+        env:
+          VAULT_ADDR: ${{ vars.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+
+        run: |
+          echo "Fetching secrets from Vault..."
+          DEPLOY_KEY=$(./scripts/fetch-secret.sh "secret/data/deploy_creds" "DEPLOY_KEY")
+          API_KEY=$(./scripts/fetch-secret.sh "secret/data/my_app/api_keys" "API_KEY")
+
+          echo "DEPLOY_KEY=$DEPLOY_KEY" >> $GITHUB_ENV
+          echo "API_KEY=$API_KEY" >> $GITHUB_ENV
+
+      - name: Deploy application
+        env:
+          DEPLOY_KEY: ${{ env.DEPLOY_KEY }}
+          API_KEY: ${{ env.API_KEY }}
+        run: |
+          echo "Deploying application to production environment."
+
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "Error: DEPLOY_KEY is empty." >&2
+            exit 1
+          fi
+          if [ -z "$API_KEY" ]; then
+            echo "Error: API_KEY is empty." >&2
+            exit 1
+          fi
+
+          echo "Deployment process initiated."
