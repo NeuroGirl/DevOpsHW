@@ -1,0 +1,42 @@
+name: Bad CI/CD
+
+on: [push]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: production
+      DEPLOY_PASSWORD: "change_me_lol"
+      API_TOKEN: "api-token-very_long"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install flask
+          pip install requests
+
+      - name: Build Docker image
+        run: docker-compose build
+
+      - name: Run Docker container
+        run: docker-compose up -d
+
+      - name: Wait for app to start (badly)
+        run: sleep 10
+
+      - name: Run integration test (using requests)
+        run: python -c "import requests; assert requests.get('http://localhost:5000').text == 'Hello, CI/CD!'"
+
+      - name: Lint code (hardcoded command)
+        run: pylint app.py
+
+      - name: Stop Docker container
+        run: docker-compose down
